@@ -159,7 +159,7 @@ fun HighlightedImage(bitmap: Bitmap, visionText: Text) {
                 }
         ) {
             Log.i("myLog", "$visionText")
-            drawHighlights(myBlocksList)
+            ta
         }
     }
 }

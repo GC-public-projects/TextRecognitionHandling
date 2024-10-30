@@ -17,8 +17,8 @@ This project is for Jetpack Compose initiated user.
 - 3 : words higlighted after tapped or dragged them
 
 <img src="/screenshots/1.png" alt="Selection of the image" height="500">&emsp;
-<img src="/screenshots/2.jpg" alt="all words highlighted with default color" height="500">&emsp;
-<img src="/screenshots/3.jpg" alt="words higlighted after tapped or dragged them" height="500">&emsp;
+<img src="/screenshots/2.png" alt="all words highlighted with default color" height="500">&emsp;
+<img src="/screenshots/3.png" alt="words higlighted after tapped or dragged them" height="500">&emsp;
 
 ## Warning
 
