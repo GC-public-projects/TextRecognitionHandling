@@ -64,7 +64,7 @@ class MyViewModel : ViewModel() {
                     right = rect.right * scale + offsetX
                     bottom = rect.bottom * scale + offsetY
                 }
-                val myBlock = com.example.textrecognitionhandling.dataclasses.MyBlock(
+                val myBlock = MyBlock(
                     block,
                     highlightColor,
                     left,
