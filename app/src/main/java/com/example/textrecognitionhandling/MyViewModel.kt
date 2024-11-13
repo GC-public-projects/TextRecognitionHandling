@@ -158,6 +158,7 @@ class MyViewModel : ViewModel() {
                 }
             }
         }
+        _uiStateTrigger.value += 1
     }
 
     private fun calculateScale(
