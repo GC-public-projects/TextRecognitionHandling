@@ -6,7 +6,7 @@ Use of Google ML kit Text recognition V2 to select words of images
 
 
 ## target audience
-This project is for Kotlin Jetpack Compose initiated user.
+This project is for Kotlin Jetpack Compose initiated users.
 
 ## Presentation
 Implementation of Google ML kit in order to highlight the words of a text in an image. The words dragged or tapped will be higlighted in a different color. The image can be zoomed or reduced too.
@@ -51,10 +51,10 @@ dependencies {
 ## MyViewModel (class)
 
 ### Purpose 
-In order to higlight some text elements (the words), we need to display the image, and on the top on it, displaying a drawscope that contents all position of the words in rectangle shapes.
-All the positions of the rectangles will be stored in dataclasses. The viewModel holds the machanisms to calculate these positions in function of the image and the view measurements and positions. 
+In order to higlight some text elements (the words), we need to display the image, and on the top on it, displaying a drawscope that contents all positions of the words in rectangle shapes.
+All the positions of the rectangles will be stored in dataclasses. The viewModel holds the mechanisms to calculate these positions in function of the image and the view measurements and positions. 
 
-As we also want to zoom out, zoom in the image and select some words by tapping or dragging them the viewModel holds the fuctions to recalculate the rectangles positions and modify their colors in function of the getures applied.
+As we also want to zoom out, zoom in the image and select some words by tapping or dragging them, the viewModel holds the fuctions to recalculate the rectangles positions and modify their colors in function of the getures applied.
 
 
 ### Content
@@ -509,21 +509,20 @@ fun HighlightedImage(bitmap: Bitmap, visionText: Text) {
     }
 }
 ```
+### Components explanations
 - `myViewModel` : instance of the viewModel
 - `myBlocksList` : the list that contents the positions, colors and text of our rectangles
 - `uiTrigger` : The key element to recompose the view when changes are done in `myBlocksList` 
-- `viewWidth` :
-- `viewHeight` :
-- `scale` :
-- `offsetX` :
-- `offsetY` :
+- `viewWidth` : width of the image displayed on the screen
+- `viewHeight` : height of the image displayed on the screen
+- `scale` : state that store sthe zoom of teh image
+- `offsetX` : state that stores the horizontal move of the image
+- `offsetY` : State that stores teh vertical moves of the image
 
-
-
-### Components explanations
+- `.pointerInput(Unit)` Modifier method that handles the gestures. As we need to handle too much different kinds of gestures we need to manually handle the triggers of the gestures. So i reproduced the tap, drag and transform gestures and, in function of the kind, a function from the viewModel is called. If someone has somthing more simple to handle the gestures that works as good as mine or better i'd enyoy he let me know.
 
 ## DrawScope.drawHighlights 
-Function to draw the bounding boxes for text
+Custom function added to DrawScope to draw the bounding boxes for text. So for each MyElement in myBlockList a rectangle is drawn thanks to the values of it.
 
 ### Content
 on the same file of the composable just behind create a custom function for `Drawscope` named `DrawScope.drawHighlights`
@@ -552,7 +551,87 @@ fun DrawScope.drawHighlights(
 ```
 
 ## MainActivity
+Display our composable by selecting an image from the gallery and hold the functions to adjust the image orientation and run TextRecogntion.
 
 ### Content
 ``` kotlin
+class MainActivity : ComponentActivity() {
+    private var bitmap by mutableStateOf<Bitmap?>(null)
+    private var visionText by mutableStateOf<Text?>(null)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Launch image picker
+        val getContent =
+            registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+                uri?.let {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        bitmap = adjustBitmapOrientation(uri)
+
+                        bitmap?.let { bmp ->
+                            runTextRecognition(bmp) // Process text recognition
+                        }
+                    }
+                }
+            }
+        getContent.launch("image/*")
+
+        // Set up Jetpack Compose
+        setContent {
+            TextRecognitionHandlingTheme {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(2.dp)
+                ) {
+                    // Display Image with Highlights
+                    bitmap?.let { bmp ->
+                        visionText?.let { text ->
+                            HighlightedImage(bmp, text)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun adjustBitmapOrientation(uri: Uri): Bitmap? {
+        val inputStream = contentResolver.openInputStream(uri)
+        val bitmap = BitmapFactory.decodeStream(inputStream)
+
+        // Reset the input stream to read EXIF data
+        val exifInputStream = contentResolver.openInputStream(uri)
+        val exif = exifInputStream?.let { ExifInterface(it) }
+        val orientation =
+            exif?.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+
+        return when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> bitmap?.rotateBitmap(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> bitmap?.rotateBitmap(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> bitmap?.rotateBitmap(270f)
+            else -> bitmap
+        }
+    }
+
+    private fun Bitmap.rotateBitmap(degrees: Float): Bitmap {
+        val matrix = Matrix().apply { postRotate(degrees) }
+        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+    }
+
+    private fun runTextRecognition(bitmap: Bitmap) {
+        val image = InputImage.fromBitmap(bitmap, 0)
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+        recognizer.process(image)
+            .addOnSuccessListener { result ->
+                CoroutineScope(Dispatchers.Main).launch {
+                    visionText = result // Store recognized text
+                }
+            }
+            .addOnFailureListener { e ->
+                e.printStackTrace()
+            }
+    }
+}
 ```

@@ -77,7 +77,7 @@ fun HighlightedImage(bitmap: Bitmap, visionText: Text) {
                                     // Calculate the distance moved since the start
                                     val distance = (change.position - dragStartPosition!!).getDistance()
 
-                                    if (distance > dragThreshold) {
+                                    if (distance > dragThreshold) { // the drag gesture is detected
                                         isDrag = true
                                         myViewModel.handleDrag(change.position)
                                         change.consume() // Prevent affecting other gestures
