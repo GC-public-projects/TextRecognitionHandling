@@ -57,7 +57,7 @@ fun HighlightedImage(bitmap: Bitmap, visionText: Text) {
                     while (true) {
                         val event = awaitPointerEvent()
 
-                        // Check if there is only one pointer on the screen
+                        // if 1 FINGER detected
                         if (event.changes.size == 1) {
                             val change = event.changes.first()
 
@@ -75,23 +75,24 @@ fun HighlightedImage(bitmap: Bitmap, visionText: Text) {
 
                                 if (elapsedTime >= dragHoldDelay && dragStartPosition != null) {
                                     // Calculate the distance moved since the start
-                                    val distance = (change.position - dragStartPosition!!).getDistance()
+                                    val distance =
+                                        (change.position - dragStartPosition!!).getDistance()
 
                                     if (distance > dragThreshold) { // the drag gesture is detected
                                         isDrag = true
-                                        myViewModel.handleDrag(change.position)
+                                        myViewModel.handleDrag(change.position) // VIEW MODEL HANDLEDRAG CALL
                                         change.consume() // Prevent affecting other gestures
                                     }
                                 }
                             }
 
                             // Detect tap gesture only if it's a quick tap (within time threshold)
-                            if (!change.pressed && change.changedToUp()) {
+                            else if (!change.pressed && change.changedToUp()) {
                                 if (!isDrag) { // Only handle as tap if no drag was detected
                                     initialTouchTime?.let { downTime ->
                                         val tapDuration = System.currentTimeMillis() - downTime
                                         if (tapDuration <= tapTimeThreshold) {
-                                            myViewModel.handleTap(change.position)
+                                            myViewModel.handleTap(change.position) // VIEW MODEL HANDLETAP CALL
                                         }
                                     }
                                 }
@@ -100,44 +101,41 @@ fun HighlightedImage(bitmap: Bitmap, visionText: Text) {
                                 dragStartPosition = null
                                 isDrag = false
                             }
-                        } else {
-                            // Reset drag and tap detection when multiple fingers are detected
+                        } else { // if MULTIPLE FINGERS detected
+                            // Reset drag and tap detection
                             dragStartPosition = null
                             initialTouchTime = null
                             isDrag = false
+
+                            // Detect zoom and pan gestures
+                            val zoomChange = event.calculateZoom()
+                            val panChange = event.calculatePan()
+
+                            // Update scale and pan only if zooming has occurred
+                            val newScale = (scale * zoomChange).coerceIn(0.3f, 5f)
+                            if (newScale != previousScale) {
+                                scale = newScale
+                                offsetX += panChange.x
+                                offsetY += panChange.y
+
+                                // Update block positions based on the new scale and offset
+                                myViewModel.updateMyBlocksList( // VIEW MODEL UPDATEMYBLOCKSLIST CALL FOR ZOOM OR MOVE
+                                    bitmap.width,
+                                    bitmap.height,
+                                    viewWidth,
+                                    viewHeight,
+                                    scale,
+                                    offsetX,
+                                    offsetY
+                                )
+                            }
+
+                            previousScale = newScale
                         }
-
-                        // Detect zoom and pan gestures
-                        val zoomChange = event.calculateZoom()
-                        val panChange = event.calculatePan()
-
-                        // Update scale and pan only if zooming has occurred
-                        val newScale = (scale * zoomChange).coerceIn(0.3f, 5f)
-                        if (newScale != previousScale) {
-                            scale = newScale
-                            offsetX += panChange.x
-                            offsetY += panChange.y
-
-                            // Update block positions based on the new scale and offset
-                            myViewModel.updateMyBlocksList(
-                                bitmap.width,
-                                bitmap.height,
-                                viewWidth,
-                                viewHeight,
-                                scale,
-                                offsetX,
-                                offsetY
-                            )
-                        }
-
-                        previousScale = newScale
                     }
                 }
             }
-    )
-
-
-    {
+    ) {
         Log.i("myLog", "$uiTrigger")
         // Display the image
         Image(
